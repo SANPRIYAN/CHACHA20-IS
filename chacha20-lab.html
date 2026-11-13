@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ChaCha20 Lab — see every step of the cipher</title>
+<meta name="description" content="Open ChaCha20-Poly1305 and XChaCha20-Poly1305 simulator with an animated, scroll-driven walkthrough. Runs 100% in your browser.">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3efe8;--paper:#fffdf7;--ink:#141210;--or:#ff5a1f;--mut:#6b655c;--k0:#fff1bd;--k1:#dcf5f8;--k2:#ffdccf;--k3:#dff4cf;--serif:'Fraunces',Georgia,serif;--sans:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,Consolas,monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans)}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--or);outline-offset:2px}
+.top{display:flex;justify-content:space-between;align-items:center;padding:20px 56px;border-bottom:2px solid var(--ink)}
+.brand{font:800 22px var(--serif);letter-spacing:-.3px}.brand b{color:var(--or);font-weight:800}
+nav a{margin-left:26px;color:var(--mut);text-decoration:none;font-size:14px;padding-bottom:3px}
+nav a:hover,nav a.on{color:var(--ink);border-bottom:2px solid var(--or)}
+.credits{padding:9px 56px;border-bottom:1px solid #d9d2c5;font:12px var(--mono);color:var(--mut);display:flex;gap:22px;flex-wrap:wrap}
+.credits b{color:var(--ink);font-weight:500}
+.hero{display:grid;grid-template-columns:minmax(380px,.9fr) 1.2fr;gap:30px;padding:42px 56px 20px;align-items:start}
+h1{font:800 44px/1.05 var(--serif);margin:0 0 12px;letter-spacing:-1.2px}h1 em{color:var(--or);font-style:normal;display:block}
+.sub{color:var(--mut);margin:0 0 24px}
+.card{background:var(--paper);border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:24px}
+.seg{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.seg button{border:2px solid var(--ink);background:var(--paper);padding:7px 16px;font-weight:600;font-size:14px}
+.seg button.on{background:var(--or);color:#fff;border-color:var(--or)}
+.lbl{display:flex;justify-content:space-between;font:11px var(--mono);letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);margin:14px 0 6px}
+.lbl button{background:none;border:0;color:var(--or);font:inherit;letter-spacing:inherit;padding:0}
+input,textarea{width:100%;border:2px solid var(--ink);background:#fff;padding:11px 13px;font:13px var(--mono);color:var(--ink);border-radius:0}
+input.bad{border-color:#d00;background:#fff0f0}
+.go{width:100%;margin-top:20px;background:var(--or);color:#fff;border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink);padding:14px;font-weight:700;font-size:16px;transition:transform .1s,box-shadow .1s}
+.go:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.out{margin-top:16px;border:2px dashed var(--ink);padding:12px;font:12px/1.6 var(--mono);word-break:break-all;display:none}
+.out.show{display:block}.out b{color:var(--or)}.out .tag{color:#0a7a3c}.out button{margin-top:8px;border:2px solid var(--ink);background:#fff;padding:4px 10px;font:12px var(--mono)}
+.live{padding:22px 24px}
+.lh{display:flex;justify-content:space-between;font:12px var(--mono);letter-spacing:1.4px;color:var(--mut);margin-bottom:16px}
+.run{color:var(--or)}.run::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--or);margin-right:8px;animation:bl 1s infinite}
+@keyframes bl{50%{opacity:.25}}
+.lw{display:flex;gap:26px;align-items:flex-start}
+.legend{font-size:12px;color:var(--mut);display:grid;gap:10px;padding-top:4px}.legend i{display:inline-block;width:10px;height:10px;margin-right:9px;border:1px solid var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(4,86px);gap:8px}
+.cell{height:48px;border:2px solid var(--ink);display:grid;place-items:center;font:12px var(--mono);transition:background .25s,transform .25s}
+.k0{background:var(--k0)}.k1{background:var(--k1)}.k2{background:var(--k2)}.k3{background:var(--k3)}
+.cell.hl{outline:3px solid var(--or);outline-offset:1px}.cell.ch{background:var(--or);color:#fff;transform:scale(1.08)}
+.cell.emp{background:transparent;border-style:dashed;border-color:#bbb}
+.grid.mini{grid-template-columns:repeat(4,54px);gap:5px}.mini .cell{height:34px;font-size:10px;border-width:1.5px}
+hr{border:0;border-top:2px dashed var(--ink);margin:22px 0 14px}
+.qr{font:12px/1.6 var(--mono);color:var(--mut)}.qr span{color:var(--or)}
+.steps{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:14px 0}
+.steps button{border:2px solid var(--ink);background:var(--paper);padding:9px 4px;font-size:11px;color:var(--mut)}
+.steps button b{display:block;font-size:16px;color:var(--ink)}.steps button.on{border-color:var(--or);color:var(--or)}
+.ctl{font:11px var(--mono);letter-spacing:1.2px;color:var(--mut);margin-top:16px}.ctline{font:12px var(--mono);margin-top:6px;word-break:break-all;min-height:20px}.ctline b{color:var(--or)}
+.hint{text-align:center;font:12px var(--mono);letter-spacing:2px;color:var(--mut);padding:30px 0 12px}
+/* story */
+.story{position:relative}
+.stage{position:sticky;top:0;height:100vh;display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:44px;padding:36px 56px;align-items:center;border-top:2px solid var(--ink);background:var(--bg)}
+.chap .kick{font:12px var(--mono);color:var(--or);letter-spacing:1.5px}
+.chap h2{font:800 40px/1.05 var(--serif);margin:8px 0 12px;letter-spacing:-1px}.chap p{color:#3b362f;margin:0 0 22px;max-width:44ch}
+.chap ol{list-style:none;margin:0;padding:0;border-left:2px solid var(--ink)}
+.chap li{padding:5px 0 5px 14px;font-size:13px;color:var(--mut);cursor:pointer;position:relative}
+.chap li.on{color:var(--ink);font-weight:700}.chap li.on::before{content:"";position:absolute;left:-7px;top:12px;width:12px;height:12px;background:var(--or);border:2px solid var(--ink)}
+.chap{max-height:calc(100vh - 72px);overflow:auto}
+.chap .more{font-size:13px;color:var(--mut);border-left:3px solid var(--or);padding-left:12px;margin:0 0 18px}
+.scrollhint{display:inline-flex;align-items:center;gap:8px;font:12px var(--mono);letter-spacing:1px;color:var(--or);border:2px solid var(--or);padding:6px 12px;margin-bottom:18px}
+.scrollhint i{font-style:normal;animation:bob 1.2s ease-in-out infinite}@keyframes bob{50%{transform:translateY(4px)}}
+.viz{padding:22px 26px;min-height:520px;overflow:hidden}
+.vh{font:12px var(--mono);letter-spacing:1.3px;color:var(--mut);margin-bottom:16px;display:flex;justify-content:space-between}
+.bar{height:6px;background:#e8e1d3;margin-top:20px;border:1px solid var(--ink)}.bar i{display:block;height:100%;background:var(--or)}
+.viz-nav{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px}
+.viz-nav button{width:36px;height:36px;border:2px solid var(--ink);background:var(--paper);font:700 20px/1 var(--mono);color:var(--ink)}
+.viz-nav button:disabled{opacity:.4;cursor:not-allowed}
+.viz-nav span{font:11px var(--mono);color:var(--mut);text-align:center}
+.viz-nav kbd{border:1px solid #cfc7b8;padding:1px 4px;font:inherit;color:var(--ink)}
+.sm{font:11px var(--mono);letter-spacing:1px;color:var(--mut);margin:14px 0 6px}
+.cap{font-size:13px;color:#3b362f;margin-top:12px}
+.wr{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kw{border:2px solid #cfc7b8;padding:7px 9px;font:12px var(--mono);display:flex;justify-content:space-between;gap:6px;opacity:.45;transition:.25s}
+.kw.on{opacity:1;border-color:var(--ink);background:var(--k1)}.kw.nn.on{background:var(--k3)}.kw b{color:var(--or)}
+.eq{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.eq big{font:700 26px var(--serif)}
+.ops{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font:12px var(--mono)}
+.ops li{border:2px solid #cfc7b8;padding:5px 8px;color:var(--mut)}.ops li.done{border-color:var(--ink);color:var(--ink);background:#fff}.ops li.on{background:var(--or);border-color:var(--ink);color:#fff;font-weight:700}
+.bits{font:13px var(--mono);margin:3px 0;white-space:nowrap}.bits s{text-decoration:none;display:inline-block;width:.62em;text-align:center}.bits s.g{margin-right:.5em}.bits s.d{background:var(--or);color:#fff}
+.bits em{font-style:normal;color:var(--mut);margin-right:10px;display:inline-block;width:56px}
+.xr{display:flex;gap:6px;overflow:hidden}.xc{display:grid;gap:6px;justify-items:center;font:12px var(--mono)}
+.xc div{width:42px;height:36px;border:2px solid var(--ink);display:grid;place-items:center;background:#fff}
+.xc .p{background:var(--k1)}.xc .s{background:var(--k0)}.xc .c{background:var(--or);color:#fff}.xc .e{border-style:dashed;border-color:#bbb;background:transparent}.xc.cur div{box-shadow:0 0 0 3px var(--or)}
+.xc .t{border:0;background:none;height:auto;font:700 16px var(--serif)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chip{border:2px solid #cfc7b8;padding:5px 7px;font:11px var(--mono);color:var(--mut)}
+.chip.done{border-color:var(--ink);color:var(--ink);background:#fff}.chip.on{background:var(--or);color:#fff;border-color:var(--ink)}.chip small{display:block;font-size:9px;opacity:.7}
+.mono{font:12px var(--mono);word-break:break-all}.r{color:var(--or)}.s{color:#0a7a3c}
+.tam{padding:60px 56px 40px;border-top:2px solid var(--ink)}.tam h2{font:800 36px var(--serif);margin:0 0 8px;letter-spacing:-1px}
+.tam .byt{display:flex;flex-wrap:wrap;gap:6px;margin:18px 0}.byt button{border:2px solid var(--ink);background:#fff;padding:7px 8px;font:12px var(--mono)}.byt button.f{background:var(--or);color:#fff}
+.verdict{font:700 18px var(--serif);padding:14px;border:2px solid var(--ink)}.verdict.ok{background:#dff4cf}.verdict.no{background:#ffd9d0}
+footer{padding:24px 56px 40px;font:12px var(--mono);color:var(--mut);border-top:1px solid #d9d2c5}
+@media(max-width:960px){.top,.hero,.credits,.tam,footer{padding-left:20px;padding-right:20px}.hero{grid-template-columns:1fr}.stage{grid-template-columns:1fr;padding:16px;gap:12px;align-items:start;overflow:auto}.chap ol{display:none}.chap h2{font-size:28px}.chap p{margin-bottom:6px}.grid{grid-template-columns:repeat(4,1fr)}.lw{flex-direction:column}nav a{margin-left:12px}.viz{min-height:0;padding:14px}.steps{grid-template-columns:repeat(3,1fr)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header class="top" id="top"><div class="brand">ChaCha<b>20</b> Lab</div><nav><a href="#top" class="on">Simulator</a><a href="#story">How it works</a><a href="#tamper">Tamper test</a></nav></header>
+<div class="credits"><span>Built by</span><b>Alan Christ A</b><b>Maadhav Aathman J V</b><b>Sanjaypriyan</b></div>
+
+<main>
+<section class="hero">
+  <div>
+    <h1>Encrypt a message. <em>Watch every step.</em></h1>
+    <div class="card">
+      <div class="seg" id="modes"><button data-m="chacha" class="on">ChaCha20 · 96-bit nonce</button><button data-m="xchacha">XChaCha20 · 192-bit nonce</button></div>
+      <div class="seg" id="tabs"><button data-t="enc" class="on">Encrypt</button><button data-t="dec">Decrypt</button></div>
+      <div id="encf"><div class="lbl">Message</div><input id="msg" value="Meet me at the library at 9." autocomplete="off"></div>
+      <div id="decf" hidden><div class="lbl">Ciphertext + tag (hex)</div><input id="cti" placeholder="paste hex from Encrypt" autocomplete="off"></div>
+      <div class="lbl"><span>Secret key · 256-bit</span><button id="gk">Generate</button></div><input id="key" autocomplete="off" spellcheck="false">
+      <div class="lbl"><span id="nl">Nonce · 96-bit</span><button id="gn">New</button></div><input id="nonce" autocomplete="off" spellcheck="false">
+      <div class="lbl"><span>Authenticated data (optional)</span></div><input id="aad" placeholder="e.g. header or user id — not encrypted, but protected" autocomplete="off">
+      <button class="go" id="go">Encrypt ▸ animate</button>
+      <div class="out" id="out"></div>
+    </div>
+  </div>
+  <div class="card live">
+    <div class="lh"><span id="lt">LIVE STATE · READY</span><span id="stat">IDLE</span></div>
+    <div class="lw"><div id="live"></div>
+      <div class="legend"><div><i style="background:var(--k0)"></i>Constants</div><div><i style="background:var(--k1)"></i>Key (256-bit)</div><div><i style="background:var(--k2)"></i>Block counter</div><div><i style="background:var(--k3)"></i>Nonce</div></div></div>
+    <hr><div class="qr" id="qr"></div>
+    <div class="steps" id="hsteps"></div>
+    <div class="ctl">CIPHERTEXT</div><div class="ctline" id="ctl"></div>
+  </div>
+</section>
+<div class="hint">SCROLL ↓ THE PIPELINE PLAYS AS A MOTION GRAPHIC</div>
+
+<section class="story" id="story"><div class="stage"><aside class="chap" id="chap"></aside><div class="viz card" id="viz" role="region" tabindex="0" aria-label="Chapter animation. Use the left and right arrow keys to step through the animation." aria-keyshortcuts="ArrowLeft ArrowRight"><div id="viz-content"></div><div class="viz-nav" role="group" aria-label="Animation step controls"><button id="viz-prev" type="button" data-step="-1" aria-label="Previous animation step" title="Previous animation step">←</button><span>Step through · <kbd>←</kbd> <kbd>→</kbd></span><button id="viz-next" type="button" data-step="1" aria-label="Next animation step" title="Next animation step">→</button></div></div></div></section>
+
+<section class="tam" id="tamper">
+  <h2>Tamper test</h2>
+  <p class="sub" style="max-width:60ch">Click any ciphertext byte to flip one bit, as an attacker would. The Poly1305 tag is recomputed and compared — one changed bit is enough to reject the message.</p>
+  <div class="byt" id="byt"></div><div class="verdict" id="vd"></div>
+</section>
+</main>
+<footer>ChaCha20 Lab · educational simulator using a pure-JS implementation of RFC 8439 and XChaCha20 · <span id="selftest">self-test…</span></footer>
+
+<script>
+/* ===== ChaCha20 / HChaCha20 / Poly1305 (pure JS, for visualising each step) ===== */
+const CONST=[0x61707865,0x3320646e,0x79622d32,0x6b206574];
+const rotl=(v,n)=>((v<<n)|(v>>>(32-n)))>>>0,add=(a,b)=>(a+b)>>>0;
+const hex=u=>[...u].map(b=>b.toString(16).padStart(2,'0')).join('');
+const hsp=u=>[...u].map(b=>b.toString(16).padStart(2,'0')).join(' ');
+const unhex=s=>{const c=(s||'').replace(/\s+/g,'');if(c.length%2||/[^0-9a-f]/i.test(c))return null;return Uint8Array.from(c.match(/../g)||[],h=>parseInt(h,16))};
+const h8=w=>(w>>>0).toString(16).padStart(8,'0');
+const le32=(u,o)=>(u[o]|(u[o+1]<<8)|(u[o+2]<<16)|(u[o+3]<<24))>>>0;
+const words=u=>Array.from({length:u.length/4},(_,i)=>le32(u,i*4));
+const w2b=ws=>{const o=new Uint8Array(ws.length*4);ws.forEach((w,i)=>{o[4*i]=w;o[4*i+1]=w>>>8;o[4*i+2]=w>>>16;o[4*i+3]=w>>>24});return o};
+const COLS=[[0,4,8,12],[1,5,9,13],[2,6,10,14],[3,7,11,15]],DIAG=[[0,5,10,15],[1,6,11,12],[2,7,8,13],[3,4,9,14]];
+const QR_OPS=[['a','+=','b'],['d','^=','a'],['d','<<<=',16],['c','+=','d'],['b','^=','c'],['b','<<<=',12],['a','+=','b'],['d','^=','a'],['d','<<<=',8],['c','+=','d'],['b','^=','c'],['b','<<<=',7]];
+function quarter(s,a,b,c,d){s[a]=add(s[a],s[b]);s[d]=rotl(s[d]^s[a],16);s[c]=add(s[c],s[d]);s[b]=rotl(s[b]^s[c],12);s[a]=add(s[a],s[b]);s[d]=rotl(s[d]^s[a],8);s[c]=add(s[c],s[d]);s[b]=rotl(s[b]^s[c],7)}
+function qrSnaps(a,b,c,d){const v={a,b,c,d},o=[{...v,op:-1,v:null}];QR_OPS.forEach(([x,op,y],i)=>{if(op==='+=')v[x]=add(v[x],v[y]);else if(op==='^=')v[x]=(v[x]^v[y])>>>0;else v[x]=rotl(v[x],y);o.push({...v,op:i,v:x})});return o}
+function runRounds(init){const s=init.slice(),st=[s.slice()];for(let r=1;r<=20;r++){(r%2?COLS:DIAG).forEach(q=>quarter(s,...q));st.push(s.slice())}return st}
+function chachaBlock(key,n12,ctr){const init=[...CONST,...words(key),ctr>>>0,...words(n12)],states=runRounds(init),out=states[20].map((w,i)=>add(w,init[i]));return{init,states,out,bytes:w2b(out)}}
+function hchacha(key,n16){const init=[...CONST,...words(key),...words(n16)],states=runRounds(init),f=states[20],sw=[f[0],f[1],f[2],f[3],f[12],f[13],f[14],f[15]];return{init,states,subWords:sw,subkey:w2b(sw)}}
+const P=(1n<<130n)-5n,leBig=u=>u.reduceRight((a,b)=>(a<<8n)|BigInt(b),0n),bigLe=(n,l)=>Uint8Array.from({length:l},(_,i)=>Number((n>>BigInt(8*i))&0xffn));
+function poly1305(k,msg){const r=leBig(k.slice(0,16))&0x0ffffffc0ffffffc0ffffffc0fffffffn,s=leBig(k.slice(16,32));let acc=0n;const accs=[];for(let i=0;i<msg.length;i+=16){const b=msg.slice(i,i+16);acc=((acc+leBig(b)+(1n<<BigInt(8*b.length)))*r)%P;accs.push(acc)}return{r,s,accs,tag:bigLe((acc+s)&((1n<<128n)-1n),16)}}
+const pad16=n=>(16-n%16)%16;
+function macData(aad,ct){const o=new Uint8Array(aad.length+pad16(aad.length)+ct.length+pad16(ct.length)+16);o.set(aad,0);o.set(ct,aad.length+pad16(aad.length));const dv=new DataView(o.buffer);dv.setBigUint64(o.length-16,BigInt(aad.length),true);dv.setBigUint64(o.length-8,BigInt(ct.length),true);return o}
+function buildTrace({mode,key,nonce,pt,aad}){
+  let hs=null,uk=key,un=nonce;
+  if(mode==='xchacha'){hs=hchacha(key,nonce.slice(0,16));uk=hs.subkey;un=new Uint8Array(12);un.set(nonce.slice(16,24),4)}
+  const nb=Math.max(1,Math.ceil(pt.length/64)),blocks=Array.from({length:nb},(_,i)=>chachaBlock(uk,un,i+1)),ks=new Uint8Array(nb*64);
+  blocks.forEach((b,i)=>ks.set(b.bytes,i*64));
+  const ct=pt.map((b,i)=>b^ks[i]),block0=chachaBlock(uk,un,0),otk=block0.bytes.slice(0,32),md=macData(aad,ct),poly=poly1305(otk,md);
+  const nA=Math.ceil(aad.length/16),nC=Math.ceil(ct.length/16),tot=Math.ceil(md.length/16),mb=[];
+  for(let i=0;i<tot;i++)mb.push({l:i<nA?'AAD':i<nA+nC?'CT':'LEN'});
+  return{mode,key,nonce,pt,aad,hs,uk,un,main:blocks[0],ks,ct,otk,poly,mb,tag:poly.tag}}
+
+/* ===== App state ===== */
+const $=s=>document.querySelector(s),rnd=n=>crypto.getRandomValues(new Uint8Array(n)),enc=new TextEncoder(),dec=new TextDecoder();
+const S={mode:'chacha',tab:'enc',T:null,flip:new Set(),ch:[],ci:-1,manual:null};
+const nlen=()=>S.mode==='xchacha'?24:12;
+$('#key').value=hex(rnd(32));$('#nonce').value=hex(rnd(12));
+
+function inputs(){
+  const k=unhex($('#key').value),n=unhex($('#nonce').value);
+  const kb=!k||k.length!==32,nb=!n||n.length!==nlen();
+  $('#key').classList.toggle('bad',kb);$('#nonce').classList.toggle('bad',nb);
+  if(kb||nb)return null;
+  return{mode:S.mode,key:k,nonce:n,aad:enc.encode($('#aad').value),pt:enc.encode($('#msg').value||' ')}}
+
+/* ===== Rendering helpers ===== */
+const role=(i,h)=>i<4?0:i<12?1:(i===12&&!h)?2:3;
+function grid(w,o={}){return'<div class="grid'+(o.mini?' mini':'')+'">'+w.map((v,i)=>{const e=o.show!=null&&i>=o.show;return`<div class="cell k${role(i,o.h)}${o.hl&&o.hl.has(i)?' hl':''}${o.ch&&o.ch.has(i)?' ch':''}${e?' emp':''}">${e?'':h8(v)}</div>`}).join('')+'</div>'}
+const bin=w=>(w>>>0).toString(2).padStart(32,'0');
+function bits(label,a,b){const x=bin(a);return`<div class="bits"><em>${label}</em>`+[...bin(b)].map((c,i)=>`<s class="${(c!==x[i]&&a!==b?'d ':'')+(i%4===3?'g':'')}">${c}</s>`).join('')+'</div>'}
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+
+/* ===== Chapter visuals: f(trace, t∈[0,1]) ===== */
+const V={
+key(T,t){const kw=8,nw=T.nonce.length/4,tot=kw+nw,sh=Math.floor(t*(tot+2));
+  const it=(u,i,off,c)=>{const b=u.slice(i*4,i*4+4),on=off+i<sh;return`<div class="kw ${c} ${on?'on':''}"><span>${hsp(b)}</span><span>→</span><b>${on?h8(le32(b,0)):'········'}</b></div>`};
+  return`<div class="sm">KEY · 32 BYTES → 8 LITTLE-ENDIAN WORDS</div><div class="wr">${Array.from({length:kw},(_,i)=>it(T.key,i,0,'')).join('')}</div>
+  <div class="sm">NONCE · ${T.nonce.length} BYTES → ${nw} WORDS</div><div class="wr">${Array.from({length:nw},(_,i)=>it(T.nonce,i,kw,'nn')).join('')}</div>
+  <p class="cap">Notice the byte order flips inside every word: the first byte becomes the <b>last</b> hex pair.</p>`},
+hchacha(T,t){const r=Math.floor(t*20),f=t>.92,h=T.hs;
+  return`<div class="sm">HCHACHA20 · KEY + NONCE[0..15] · ROUND ${r} / 20</div>${grid(h.states[r],{h:1,hl:f?new Set([0,1,2,3,12,13,14,15]):null})}
+  <div class="sm">SUBKEY = WORDS 0–3 AND 12–15</div><div class="mono ${f?'r':''}">${f?hex(h.subkey):'· · · · · · · · · · · ·'}</div>
+  <p class="cap">The leftover 8 nonce bytes go to the main cipher as <span class="mono">00000000 ‖ ${hex(T.nonce.slice(16))}</span>.</p>`},
+state(T,t){const m=T.main,x=T.hs?'HChaCha20 subkey':'your key';
+  return`<div class="sm">INITIAL STATE · 16 WORDS × 32 BITS</div>${grid(m.init,{show:Math.floor(t*18)})}
+  <div class="eq" style="margin-top:14px"><span class="mono">row 0 constants</span><span class="mono">rows 1–2 ${x}</span><span class="mono">row 3 counter=1 + nonce</span></div>
+  <p class="cap">Counter starts at 1 for encryption — counter 0 is reserved to make the Poly1305 key.</p>`},
+rounds(T,t){const m=T.main,r=Math.min(19,Math.floor(t*20)),fr=t*20-r,k=Math.min(12,Math.floor(fr*13)),q=(r%2?DIAG:COLS)[0],base=m.states[r].slice(),sn=qrSnaps(...q.map(i=>base[i]))[k];
+  const sn0=qrSnaps(...q.map(i=>base[i]));[sn.a,sn.b,sn.c,sn.d].forEach((v,j)=>base[q[j]]=v);
+  let bd='';if(k>0){const p=sn0[k-1],v=sn.v;bd=`<div class="sm">BITS OF <b>${v}</b> · ORANGE = CHANGED</div>${bits('before',p[v],p[v])}${bits('after',p[v],sn[v])}`}
+  return`<div class="sm">ROUND ${r+1} / 20 · ${r%2?'DIAGONAL':'COLUMN'} ROUND · QUARTER-ROUND ON WORDS ${q.join(', ')}</div>${grid(base,{hl:new Set(q),ch:k>0?new Set([q['abcd'.indexOf(sn.v)]]):null})}
+  <ul class="ops" style="margin-top:14px">${QR_OPS.map((o,i)=>`<li class="${i===sn.op?'on':i<sn.op?'done':''}">${o[0]} ${o[1]} ${o[2]}</li>`).join('')}</ul>${bd}
+  <p class="cap">The other three quarter-rounds of this round run the same steps on their own words.</p>`},
+ks(T,t){const m=T.main,n=Math.floor(t*17);
+  return`<div class="sm">MIXED STATE + STARTING STATE = KEYSTREAM BLOCK</div><div class="eq">${grid(m.states[20],{mini:1})}<big>+</big>${grid(m.init,{mini:1})}<big>=</big>${grid(m.out,{mini:1,show:n})}</div>
+  <div class="sm">KEYSTREAM BYTES (BLOCK 1)</div><div class="mono r">${hsp(m.bytes.slice(0,Math.min(64,n*4)))}</div><p class="cap">Adding the start state back makes the rounds impossible to run in reverse.</p>`},
+xor(T,t){const nb=Math.min(T.pt.length,12),on=Math.ceil(clamp(t*1.15)*nb),cur=on-1,col=(i)=>{const p=T.pt[i],ch=p>31&&p<127?String.fromCharCode(p):'·',sh=i<on;return`<div class="xc ${i===cur?'cur':''}"><div class="t">${ch}</div><div class="p">${h8(p).slice(6)}</div><div class="s">${h8(T.ks[i]).slice(6)}</div><div class="${sh?'c':'e'}">${sh?h8(T.ct[i]).slice(6):''}</div></div>`};
+  const b8=x=>x.toString(2).padStart(8,'0');
+  return`<div class="sm">PLAINTEXT ⊕ KEYSTREAM = CIPHERTEXT (BYTE BY BYTE)</div><div style="display:flex;gap:12px"><div class="xc" style="color:var(--mut)"><div class="t">&nbsp;</div><span style="height:36px;display:grid;align-items:center">plain</span><span style="height:36px;display:grid;align-items:center">⊕ key</span><span style="height:36px;display:grid;align-items:center">= cipher</span></div><div class="xr">${Array.from({length:nb},(_,i)=>col(i)).join('')}</div></div>
+  ${cur>=0?`<div class="sm">BYTE ${cur+1} IN BINARY</div><div class="bits"><em>plain</em>${b8(T.pt[cur])}</div><div class="bits"><em>⊕ key</em>${b8(T.ks[cur])}</div><div class="bits r"><em>= cipher</em>${b8(T.ct[cur])}</div>`:''}
+  <p class="cap">${T.pt.length>nb?`+ ${T.pt.length-nb} more bytes follow the same rule (64 keystream bytes per block). `:''}XOR the ciphertext with the same keystream and the plaintext returns.</p>`},
+mac(T,t){const p=T.poly,N=T.mb.length,o=T.otk,n1=Math.floor(clamp(t/.25)*64),i=t<.28?-1:Math.min(N-1,Math.floor((t-.28)/.62*N)),fin=t>.9,hx=hex(o);
+  return`<div class="sm">ONE-TIME KEY · KEYSTREAM BLOCK 0 → r (16 bytes) + s (16 bytes)</div><div class="mono"><span class="r">${hx.slice(0,Math.min(32,n1))}</span><span class="s">${n1>32?hx.slice(32,n1):''}</span></div>
+  <div class="sm">MAC INPUT · 16-BYTE BLOCKS (AAD · CIPHERTEXT · LENGTHS)</div><div class="chips">${T.mb.map((b,j)=>`<div class="chip ${j===i?'on':j<i?'done':''}"><small>${b.l}</small>#${j+1}</div>`).join('')}</div>
+  <div class="sm">ACCUMULATOR = (ACC + BLOCK) × r  mod 2¹³⁰−5</div><div class="mono">${i>=0?p.accs[i].toString(16).padStart(33,'0'):'0'}</div>
+  <div class="sm">TAG = (ACC + s) mod 2¹²⁸</div><div class="mono s" style="font-size:16px;font-weight:700">${fin?hex(T.tag):'················'}</div>
+  <p class="cap">The tag is appended to the ciphertext. Change even one bit and the tag will not match.</p>`}};
+const CH={
+key:['Key & nonce','Everything starts as raw bytes. ChaCha20 reads the key and nonce as little-endian 32-bit words.',1],
+hchacha:['HChaCha20 subkey','XChaCha20 first mixes the key with the first 16 nonce bytes through 20 rounds. Words 0–3 and 12–15 become a fresh subkey, which is why a random 192-bit nonce is safe to reuse across messages.',1.6],
+state:['The 4×4 state','The 16 words are laid in a grid: 4 constants (“expand 32-byte k”), 8 key words, a block counter and the nonce.',1],
+rounds:['20 rounds','Rounds alternate between columns and diagonals. Each quarter-round uses only add, XOR and rotate. Watch one at bit level.',3.4],
+ks:['Keystream','The mixed grid is added back to the starting grid, giving 64 unpredictable keystream bytes.',1.2],
+xor:['XOR with message','Encryption is a plain XOR of each plaintext byte with a keystream byte.',1.3],
+mac:['Poly1305 tag','Block 0 gives a one-time key. The AAD, ciphertext and lengths feed an accumulator that ends as a 16-byte tag.',1.8]};
+
+const MORE={
+key:'Computers don’t see letters, they see bytes. ChaCha20 works on 32-bit words, so the 32-byte key becomes 8 words and the nonce becomes 3 words (6 in XChaCha20). The nonce is a “number used once”: a fresh value for every message, so the same key never scrambles two messages the same way.',
+hchacha:'Think of this as a key blender. The 24-byte nonce is too long for ChaCha20 itself, so its first 16 bytes are stirred together with your key to make a brand-new key (the subkey). The rest of the nonce goes on to the main cipher. This is what makes random nonces safe in XChaCha20.',
+state:'ChaCha20 does all its mixing inside a 4×4 grid of 16 words. Yellow cells are fixed public constants, blue cells are your key, the orange cell counts which 64-byte block is being made, and green cells are the nonce. Every block of your message gets a different counter, so every block gets different keystream.',
+rounds:'This is the heart of the cipher. A quarter-round takes four cells (a, b, c, d) and scrambles them with just three tricks: add numbers, XOR bits, and rotate bits. Doing this 80 times (4 per round × 20 rounds) spreads your key through every cell, so the output looks completely random. Scroll slowly and watch which bits flip.',
+ks:'After the rounds the grid looks random, but the cipher adds the original starting grid back in. That step is one-way: nobody can run the rounds backwards to find your key. The 16 words become 64 bytes, the keystream, like a long random pad that is used only once.',
+xor:'XOR compares bits: equal bits give 0, different bits give 1. Each message byte is XORed with a keystream byte to make the ciphertext. XOR undoes itself, so applying the same keystream again gives the message back. That is why a key and nonce pair must never be reused.',
+mac:'Encryption hides a message but does not stop someone changing it. Poly1305 is the tamper seal: it reads the ciphertext (and any extra data) in 16-byte pieces and produces a 16-byte tag using a one-time key. On decryption the tag is recomputed. If even one bit changed, the tags differ and the message is rejected.'};
+
+/* ===== Story (scroll-driven) ===== */
+function buildChapters(){
+  S.ch=(S.mode==='xchacha'?['key','hchacha','state','rounds','ks','xor','mac']:['key','state','rounds','ks','xor','mac']);S.ci=-1;S.cp=0;S.manual=null;
+  const st=$('#story'),sum=S.ch.reduce((a,c)=>a+CH[c][2],0);st.style.height=`calc(100vh + ${Math.round(sum*110)}vh)`}
+function story(){
+  if(!S.T)return;const r=$('#story').getBoundingClientRect(),vh=innerHeight,tot=r.height-vh;if(r.top>vh||r.bottom<0)return;
+  let x=clamp(-r.top/tot)*S.ch.reduce((a,c)=>a+CH[c][2],0),i=0,t=0;
+  for(i=0;i<S.ch.length;i++){const w=CH[S.ch[i]][2];if(x<=w||i===S.ch.length-1){t=clamp(x/w);break}x-=w}
+  if(S.manual){i=S.manual.i;t=S.manual.t}
+  const id=S.ch[i];S.cp=t;
+  if(i!==S.ci){S.ci=i;$('#chap').innerHTML=`<div class="kick">CHAPTER ${i+1} OF ${S.ch.length}</div><h2>${CH[id][0]}</h2><p>${CH[id][1]}</p><p class="more">${MORE[id]}</p>${i===0?'<div class="scrollhint"><i>↓</i> Scroll to play the animation</div>':''}<ol>${S.ch.map((c,j)=>`<li data-i="${j}" class="${j===i?'on':''}">${CH[c][0]}</li>`).join('')}</ol>`;
+    $('#hsteps').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.c===id))}
+  $('#viz-content').innerHTML=`<div class="vh"><span>${CH[id][0].toUpperCase()}</span><span>${S.T.mode==='xchacha'?'XCHACHA20':'CHACHA20'}-POLY1305</span></div>${V[id](S.T,t)}<div class="bar" role="progressbar" aria-label="Chapter animation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(t*100)}"><i style="width:${t*100}%"></i></div>`;
+  $('#viz-prev').disabled=i===0&&t===0;$('#viz-next').disabled=i===S.ch.length-1&&t===1}
+function goChapterProgress(i,t){const st=$('#story'),top=st.offsetTop,tot=st.offsetHeight-innerHeight,sum=S.ch.reduce((a,c)=>a+CH[c][2],0);let before=0;for(let j=0;j<i;j++)before+=CH[S.ch[j]][2];
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  scrollTo({top:top+(before+CH[S.ch[i]][2]*clamp(t))/sum*tot,behavior:reduced?'auto':'smooth'})}
+function goChapter(id){let i=S.ch.indexOf(id);if(i<0)i=0;S.manual=null;goChapterProgress(i,.04)}
+function adjacentVisualStep(id,t,direction){
+  const current=V[id](S.T,t),resolution=4096;
+  for(let n=1;n<=resolution;n++){
+    const next=clamp(t+direction*n/resolution);
+    if(next===t)break;
+    if(V[id](S.T,next)!==current)return next
+  }
+  return t
+}
+function stepChapter(direction){
+  if(S.ci<0)return;
+  let i=S.manual?S.manual.i:S.ci,t=S.manual?S.manual.t:S.cp,id=S.ch[i],next=adjacentVisualStep(id,t,direction);
+  if(next===t){
+    if(direction<0&&i>0){i--;next=1}
+    else if(direction>0&&i<S.ch.length-1){i++;next=0}
+    else return
+  }
+  S.manual={i,t:next};story()
+}
+$('#chap').addEventListener('click',e=>{const li=e.target.closest('li');if(li)goChapter(S.ch[+li.dataset.i])});
+$('#viz').addEventListener('click',e=>{const b=e.target.closest('button[data-step]');if(b)stepChapter(+b.dataset.step)});
+$('#viz').addEventListener('keydown',e=>{if((e.key!=='ArrowLeft'&&e.key!=='ArrowRight')||e.repeat)return;e.preventDefault();stepChapter(e.key==='ArrowRight'?1:-1)});
+let tick=false;addEventListener('scroll',()=>{S.manual=null;if(!tick){tick=true;requestAnimationFrame(()=>{tick=false;story()})}},{passive:true});addEventListener('resize',story);
+
+/* ===== Hero live panel ===== */
+let timer;
+const HS=[['key','Key + Nonce'],['state','State 4×4'],['rounds','20 Rounds'],['ks','Keystream'],['xor','XOR'],['mac','Poly1305 tag']];
+$('#hsteps').innerHTML=HS.map((s,i)=>`<button data-c="${s[0]}"><b>${i+1}</b>${s[1]}</button>`).join('');
+$('#hsteps').addEventListener('click',e=>{const b=e.target.closest('button');if(b)goChapter(b.dataset.c)});
+const opsTxt='a += b; d ^= a; d <<<= 16; c += d; b ^= c; b <<<= 12; …';
+function draw(r){const T=S.T,q=r>0?(r%2?COLS:DIAG)[0]:null;
+  $('#live').innerHTML=grid(T.main.states[Math.min(20,r)],{hl:q?new Set(q):null});
+  $('#lt').textContent=`LIVE STATE · ROUND ${Math.min(20,r)} OF 20`;
+  $('#qr').innerHTML=r===0?'Initial state — press <span>Encrypt</span> to run the 20 rounds.':r<=20?`Round ${r} · quarter round on ${r%2?'column':'diagonal'} 0:<br><span>${opsTxt}</span>`:'Rounds done → add start state → XOR → Poly1305 tag.'}
+function steps(n){[...$('#hsteps').children].forEach((b,i)=>b.style.cssText=i===n?'border-color:var(--or);color:var(--or)':'')}
+function ctline(){const T=S.T,c=[...T.ct].slice(0,16).map(b=>b.toString(16).padStart(2,'0'));$('#ctl').innerHTML=`<b>${c.slice(0,4).join(' ')}</b> ${c.slice(4).join(' ')}${T.ct.length>16?' …':''} &nbsp;tag <b>${hsp(T.tag.slice(0,4))}</b> …`}
+function play(){clearInterval(timer);const st=$('#stat');st.textContent='RUNNING';st.className='run';let r=0;
+  timer=setInterval(()=>{draw(r);steps(r<1?1:r<20?2:r===20?3:r===21?4:5);if(r===22){clearInterval(timer);st.textContent='DONE';st.className='';return}r++},400)}
+
+/* ===== Actions ===== */
+function recompute(){const I=inputs();if(!I)return false;S.T=buildTrace(I);S.flip.clear();buildChapters();draw(0);steps(-1);ctline();tamper();story();return true}
+function decryptRun(){const I=inputs(),b=unhex($('#cti').value);if(!I||!b||b.length<16)return{err:'Enter a valid key, nonce and hex ciphertext + 16-byte tag.'};
+  const ct=b.slice(0,-16),tag=b.slice(-16),t=buildTrace({...I,pt:ct.length?ct:new Uint8Array(0)}),exp=poly1305(t.otk,macData(I.aad,ct)).tag;
+  if(hex(exp)!==hex(tag))return{err:'Authentication failed — the tag does not match. The key, nonce, data or ciphertext was changed, so no plaintext is released.'};
+  return{pt:dec.decode(Uint8Array.from(ct,(x,i)=>x^t.ks[i]))}}
+function esc(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+$('#go').onclick=()=>{
+  if(!recompute())return;const o=$('#out');o.className='out show';
+  if(S.tab==='enc'){play();const T=S.T;o.innerHTML=`<b>ciphertext</b><br>${hex(T.ct)}<br><b class="tag">tag</b><br><span class="tag">${hex(T.tag)}</span><br><button id="cp">Copy ciphertext + tag</button> <button id="tod">Decrypt this</button>`;
+    $('#cp').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(hex(T.ct)+hex(T.tag));$('#cp').textContent='Copied'};
+    $('#tod').onclick=()=>{$('#cti').value=hex(T.ct)+hex(T.tag);setTab('dec')}}
+  else{const d=decryptRun();o.innerHTML=d.err?`<b>✗</b> ${d.err}`:`<b class="tag">✓ tag verified</b><br>plaintext: ${esc(d.pt)}`;play()}}
+function setTab(t){S.tab=t;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));$('#encf').hidden=t!=='enc';$('#decf').hidden=t!=='dec';$('#go').textContent=t==='enc'?'Encrypt ▸ animate':'Decrypt & verify ▸ animate';$('#out').className='out'}
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.t)};
+$('#modes').onclick=e=>{const b=e.target.closest('button');if(!b)return;S.mode=b.dataset.m;document.querySelectorAll('#modes button').forEach(x=>x.classList.toggle('on',x===b));
+  $('#nonce').value=hex(rnd(nlen()));$('#nl').textContent=`Nonce · ${nlen()*8}-bit`;recompute()};
+$('#gk').onclick=()=>{$('#key').value=hex(rnd(32));recompute()};$('#gn').onclick=()=>{$('#nonce').value=hex(rnd(nlen()));recompute()};
+['msg','key','nonce','aad'].forEach(id=>$('#'+id).addEventListener('input',recompute));
+
+/* ===== Tamper test ===== */
+function tamper(){const T=S.T,n=Math.min(T.ct.length,64);
+  $('#byt').innerHTML=Array.from({length:n},(_,i)=>`<button data-i="${i}" class="${S.flip.has(i)?'f':''}">${(T.ct[i]^(S.flip.has(i)?1:0)).toString(16).padStart(2,'0')}</button>`).join('')+(T.ct.length>n?`<span class="mono">… +${T.ct.length-n} bytes</span>`:'');
+  const c2=T.ct.map((b,i)=>S.flip.has(i)?b^1:b),t2=poly1305(T.otk,macData(T.aad,c2)).tag,ok=hex(t2)===hex(T.tag),v=$('#vd');
+  v.className='verdict '+(ok?'ok':'no');
+  v.innerHTML=ok?`✓ Tag valid — message accepted<div class="mono" style="font-weight:400;margin-top:6px">${hex(T.tag)}</div>`:`✗ Tag mismatch — message rejected<div class="mono" style="font-weight:400;margin-top:6px">expected ${hex(T.tag)}<br>computed ${hex(t2)}</div>`}
+$('#byt').onclick=e=>{const b=e.target.closest('button');if(!b)return;const i=+b.dataset.i;S.flip.has(i)?S.flip.delete(i):S.flip.add(i);tamper()};
+
+/* ===== Self-test against published vectors ===== */
+(function(){const seq=Uint8Array.from({length:32},(_,i)=>i);
+  const a=hex(chachaBlock(seq,unhex('000000090000004a00000000'),1).bytes.slice(0,16))==='10f1e7e4d13b5915500fdd1fa32071c4';
+  const b=hchacha(seq,unhex('000000090000004a0000000031415927')).subWords.map(h8).join('')==='82413b4227b27bfed30e42508a877d73a0f9e4d58a74a853c12ec41326d3ecdc';
+  $('#selftest').textContent=(a&&b)?'RFC 8439 + XChaCha test vectors ✓':'test vector mismatch ✗'})();
+
+recompute();
+</script>
+</body>
+</html>
